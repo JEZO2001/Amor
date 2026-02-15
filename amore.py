@@ -31,6 +31,7 @@ import streamlit as st
 from datetime import date
 import random
 import time
+import base64
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Para mi Pandita Eterno", page_icon="🐼",
@@ -153,6 +154,25 @@ elif opcion == "Mensajes Especiales":
 
 # --- SECCIÓN 4: ESPECIAL SAN VALENTÍN ---
 elif opcion == "San Valentín 💘":
+
+    # --- MÚSICA INVISIBLE ---
+    try:
+        # 1. Leemos el archivo de la canción
+        with open("cancion.mp3", "rb") as audio_file:
+            audio_bytes = audio_file.read()
+            # 2. Lo codificamos para inyectarlo en HTML
+            audio_base64 = base64.b64encode(audio_bytes).decode()
+
+        # 3. Creamos un reproductor HTML completamente oculto (display:none) que se repita (loop)
+        audio_html = f"""
+            <audio autoplay loop style="display:none;">
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+        """
+        st.markdown(audio_html, unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass  # Si aún no subes el archivo, el código no se rompe
+
     st.title("Feliz San Valentín, mi Pandita 🐼💘")
     st.write("---")
 
@@ -209,4 +229,4 @@ Quiero seguir construyendo un futuro contigo, paso a paso, mi Pandita 🐼. Acom
             time.sleep(2)
         st.success(
             "🎟️ **¡CUPÓN VÁLIDO POR:** Un abrazo gigante y mil besos 🥰")
-        st.snow()
+        lluvia_de_corazones()
