@@ -32,10 +32,22 @@ from datetime import date
 import random
 import time
 import base64
+import requests
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Para mi Pandita Eterno", page_icon="🐼",
                    layout="centered")
+
+# --- FUNCIÓN TELEGRAM ---
+def notificar_telegram(deseo):
+    token = "8795488115:AAEukTVr458H4VzH7hYHSM0xR94t0hMlNFQ"
+    chat_id = "1012265527"
+    mensaje = f"🎂 ¡NUEVO DESEO RECIBIDO! 🎂\n\nTu Pandita ha pedido:\n\"{deseo}\""
+    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={mensaje}"
+    try:
+        requests.get(url)
+    except:
+        pass
 
 # --- ESTILOS PERSONALIZADOS (CSS) ---
 st.markdown("""
@@ -76,7 +88,7 @@ st.markdown("""
 st.sidebar.title("❤️ Menú de Amor")
 # ¡Agregamos la nueva sección aquí!
 opcion = st.sidebar.radio("Ir a:", ["Inicio", "Nuestra Galería", "Mensajes Especiales",
-                                    "San Valentín 💘"])
+                                    "San Valentín 💘", "Cumpleaños 🎂"])
 
 # --- SECCIÓN 1: INICIO ---
 if opcion == "Inicio":
@@ -229,4 +241,52 @@ Quiero seguir construyendo un futuro contigo, paso a paso, mi Pandita 🐼. Acom
             time.sleep(2)
         st.success(
             "🎟️ **¡CUPÓN VÁLIDO POR:** Un abrazo gigante y mil besos 🥰")
-        lluvia_de_corazones()
+
+# --- SECCIÓN 5: CUMPLEAÑOS ---
+elif opcion == "Cumpleaños 🎂":
+    st.title("🎂 Próximamente... ¡Tu gran día! 🥳")
+    st.write("---")
+    
+    st.markdown(f"""
+    <div class="carta">
+    <h3>Mi Pandita Precioso 🐼✨</h3>
+    Sé que se acerca tu cumpleaños y mi corazón ya está saltando de alegría. Me hace tan feliz poder celebrar tu vida, porque eres lo mejor que me ha pasado. 
+    <br><br>
+    Quiero que este día sea perfecto, tal como tú lo eres para mí. Por eso, me encantaría saber qué es aquello que te haría más feliz, qué sueñas o qué te gustaría vivir en este nuevo año que comienzas.
+    <br><br>
+    <em>"Eres mi regalo diario, y hoy quiero ser yo quien te consienta al máximo."</em>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Animación de globos
+    st.balloons()
+    
+    # Apartado interactivo mejorado
+    st.write("#### 🕯️ ¿Qué te haría feliz en tu cumpleaños?")
+    deseo = st.text_area("Cuéntame aquí tus deseos, sueños o cualquier detalle que pase por tu mente... (llegará directo a mi corazón 💖):", 
+                         placeholder="Me gustaría que...", height=150)
+    
+    if st.button("¡Enviar mi deseo al cielo! 🎂✨"):
+        if deseo:
+            with st.spinner('Guardando tu deseo bajo llave y enviándolo por correo express...'):
+                time.sleep(2)
+            
+            # Guardamos el deseo en un archivo local
+            with open("deseos_secretos.txt", "a", encoding="utf-8") as f:
+                from datetime import datetime
+                ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"[{ahora}] Deseo: {deseo}\n")
+            
+            # Enviamos notificación a Telegram
+            notificar_telegram(deseo)
+            
+            st.success("✨ ¡Deseo guardado correctamente! Ya lo tengo conmigo y haré todo lo posible para que sea realidad. Te amo infinitamente. ❤️")
+            st.snow()
+            st.balloons()
+        else:
+            st.warning("¡Oye! Primero tienes que pensar y escribir un deseo para poder soplar las velas. 😉")
+
+    st.write("---")
+    
+    # Mensaje final de cumpleaños
+    st.info("🎁 **Nota:** Tu regalo más grande es todo el amor que te tengo, pero prepárate para los mimos infinitos hoy.")
