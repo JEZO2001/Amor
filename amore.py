@@ -40,14 +40,15 @@ st.set_page_config(page_title="Para mi Pandita Eterno", page_icon="🐼",
 
 # --- FUNCIÓN TELEGRAM ---
 def notificar_telegram(deseo):
-    token = "8795488115:AAEukTVr458H4VzH7hYHSM0xR94t0hMlNFQ"
-    chat_id = "1012265527"
-    mensaje = f"🎂 ¡NUEVO DESEO RECIBIDO! 🎂\n\nTu Pandita ha pedido:\n\"{deseo}\""
-    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={mensaje}"
+    # Usamos Secrets por seguridad
     try:
+        token = st.secrets["TELEGRAM_TOKEN"]
+        chat_id = st.secrets["TELEGRAM_CHAT_ID"]
+        mensaje = f"🎂 ¡NUEVO DESEO RECIBIDO! 🎂\n\nTu Pandita ha pedido:\n\"{deseo}\""
+        url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={mensaje}"
         requests.get(url)
-    except:
-        pass
+    except Exception as e:
+        st.error(f"Error de configuración en Telegram: {e}")
 
 # --- ESTILOS PERSONALIZADOS (CSS) ---
 st.markdown("""
@@ -254,39 +255,73 @@ elif opcion == "Cumpleaños 🎂":
     <br><br>
     Quiero que este día sea perfecto, tal como tú lo eres para mí. Por eso, me encantaría saber qué es aquello que te haría más feliz, qué sueñas o qué te gustaría vivir en este nuevo año que comienzas.
     <br><br>
-    <em>"Eres mi regalo diario, y hoy quiero ser yo quien te consienta al máximo."</em>
+    <em>"Eres mi regalo diario, y quiero ser yo quien te consienta al máximo."</em>
     </div>
     """, unsafe_allow_html=True)
+    
+    st.write("---")
     
     # Animación de globos
     st.balloons()
     
-    # Apartado interactivo mejorado
+    # Apartado interactivo con botones
     st.write("#### 🕯️ ¿Qué te haría feliz en tu cumpleaños?")
-    deseo = st.text_area("Cuéntame aquí tus deseos, sueños o cualquier detalle que pase por tu mente... (llegará directo a mi corazón 💖):", 
-                         placeholder="Me gustaría que...", height=150)
+    st.write("Dime, mi amor... ¿qué prefieres para este año?")
     
-    if st.button("¡Enviar mi deseo al cielo! 🎂✨"):
-        if deseo:
-            with st.spinner('Guardando tu deseo bajo llave y enviándolo por correo express...'):
-                time.sleep(2)
-            
-            # Guardamos el deseo en un archivo local
-            with open("deseos_secretos.txt", "a", encoding="utf-8") as f:
-                from datetime import datetime
-                ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                f.write(f"[{ahora}] Deseo: {deseo}\n")
-            
-            # Enviamos notificación a Telegram
-            notificar_telegram(deseo)
-            
-            st.success("✨ ¡Deseo guardado correctamente! Ya lo tengo conmigo y haré todo lo posible para que sea realidad. Te amo infinitamente. ❤️")
-            st.snow()
-            st.balloons()
-        else:
-            st.warning("¡Oye! Primero tienes que pensar y escribir un deseo para poder soplar las velas. 😉")
-
-    st.write("---")
+    col1, col2 = st.columns(2)
     
-    # Mensaje final de cumpleaños
-    st.info("🎁 **Nota:** Tu regalo más grande es todo el amor que te tengo, pero prepárate para los mimos infinitos hoy.")
+    if col1.button("🎁 1 regalo a mi elección"):
+        st.session_state.tipo_regalo = "uno"
+    if col2.button("🎁 Muchos regalos"):
+        st.session_state.tipo_regalo = "muchos"
+    
+    if 'tipo_regalo' in st.session_state:
+        st.write("---")
+        if st.session_state.tipo_regalo == "uno":
+            st.markdown("### ✨ ¡Tú eliges!")
+            deseo = st.text_area("Escribe aquí ese regalo especial que tienes en mente...", 
+                                 placeholder="Me gustaría que mi regalo fuera...", height=100)
+            
+            if st.button("¡Enviar mi elección! 🎂✨"):
+                if deseo:
+                    with st.spinner('Guardando tu elección secreta...'):
+                        time.sleep(2)
+                    
+                    # Guardamos y notificamos
+                    with open("deseos_secretos.txt", "a", encoding="utf-8") as f:
+                        from datetime import datetime
+                        ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        f.write(f"[{ahora}] Eligió 1 regalo: {deseo}\n")
+                    
+                    notificar_telegram(f"Ha elegido 1 REGALO: {deseo}")
+                    
+                    st.success("✨ ¡Elección guardada! Haré todo lo posible para que ese regalo llegue a tus manos. ¡Te amo! ❤️")
+                    st.snow()
+                    st.balloons()
+                else:
+                    st.warning("¡Mmm! No has escrito qué regalo quieres todavía. 😉")
+        
+        elif st.session_state.tipo_regalo == "muchos":
+            st.markdown("""
+            <div class="carta">
+            <h3 style='color: #d33682;'>¡Qué emoción! ✨</h3>
+            Has elegido la opción de <strong>muchos regalos</strong>. ¡Prepárate para las sorpresas, mi amor! 
+            Me encargaré de que cada detalle sea especial y de que este cumpleaños sea inolvidable y lleno de mimos.
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("¡Confirmar sorpresas! 🚀❤️"):
+                with st.spinner('Preparando la maquinaria de sorpresas...'):
+                    time.sleep(2)
+                
+                # Guardamos y notificamos
+                with open("deseos_secretos.txt", "a", encoding="utf-8") as f:
+                    from datetime import datetime
+                    ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    f.write(f"[{ahora}] Eligió MUCHOS REGALOS (Sorpresa)\n")
+                
+                notificar_telegram("¡HA ELEGIDO MUCHOS REGALOS! 🎉 (Prepárate para sorprender)")
+                
+                st.success("¡Confirmado! El plan de sorpresas infinitas ha comenzado. 🐼💖")
+                st.snow()
+                st.balloons()
