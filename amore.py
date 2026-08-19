@@ -28,6 +28,7 @@ def lluvia_de_corazones():
     st.markdown(corazones_html, unsafe_allow_html=True)
 
 import streamlit as st
+import streamlit.components.v1 as components
 from datetime import date, timedelta
 import random
 import time
@@ -170,6 +171,89 @@ st.markdown("""
     }
     .hito b { color: #d33682; }
 
+    /* ───────── Juego: las cajitas del mes ───────── */
+    /* Streamlit pone la clase st-key-<key> en el envoltorio del widget,
+       así que apuntamos solo a los botones cuya key empieza por "caja_". */
+    /* Streamlit apila las columnas en pantallas angostas; aquí queremos que
+       la cuadrícula siga siendo de 3x3 también en el celular. */
+    .st-key-cajitas [data-testid="stHorizontalBlock"] {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+    }
+    .st-key-cajitas [data-testid="stColumn"] {
+        flex: 1 1 0 !important;
+        width: 33.333% !important;
+        min-width: 0 !important;
+    }
+    [class*="st-key-caja_"] button {
+        min-height: 104px !important;
+        border-radius: 18px !important;
+        border: 2px dashed #f0a8c4 !important;
+        background: linear-gradient(160deg, #fff0f5, #ffdcea) !important;
+        color: #d33682 !important;
+        font-size: 2rem !important;
+        line-height: 1 !important;
+        box-shadow: 0 6px 16px -8px rgba(216, 55, 107, .5);
+        transition: transform .25s ease, box-shadow .25s ease,
+                    background .25s ease !important;
+    }
+    [class*="st-key-caja_"] button:hover {
+        transform: translateY(-4px) rotate(-3deg);
+        background: linear-gradient(160deg, #ffe4ef, #ffc9de) !important;
+        box-shadow: 0 12px 26px -10px rgba(216, 55, 107, .65);
+    }
+    .cajita-abierta {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 104px;
+        padding: 10px 8px;
+        text-align: center;
+        border-radius: 18px;
+        border: 2px solid #f2c1d6;
+        background: linear-gradient(160deg, #ffffff, #ffeef5);
+        box-shadow: 0 8px 20px -10px rgba(216, 55, 107, .45);
+        font-family: Georgia, serif;
+        font-size: clamp(.68rem, 2.7vw, .88rem);
+        line-height: 1.3;
+        hyphens: auto;
+        color: #7d1a3c;
+        animation: cajitaAbre .55s cubic-bezier(.34, 1.56, .64, 1) both;
+    }
+    @keyframes cajitaAbre {
+        0%   { opacity: 0; transform: scale(.45) rotate(-14deg); }
+        60%  { opacity: 1; }
+        100% { opacity: 1; transform: none; }
+    }
+    .cajita-final {
+        margin-top: 20px;
+        padding: 28px 22px;
+        border-radius: 22px;
+        text-align: center;
+        color: #fff5f8;
+        background: linear-gradient(135deg, #7d1a3c, #d8376b 60%, #b6407f);
+        box-shadow: 0 18px 40px -18px rgba(125, 26, 60, .85);
+        animation: cajitaAbre .75s cubic-bezier(.34, 1.56, .64, 1) both;
+    }
+    .cajita-final__t {
+        margin: 0 0 10px !important;
+        font-family: Georgia, serif !important;
+        font-size: 1.6rem !important;
+    }
+    /* La barra de progreso de Streamlit viene en azul; la pasamos al rosa.
+       El relleno cuelga tres niveles por debajo del contenedor. */
+    [data-testid="stProgress"] > div > div > div {
+        background: linear-gradient(90deg, #d8376b, #ff5c8a) !important;
+        border-radius: 999px !important;
+    }
+    .cajita-final__p {
+        margin: 0 auto !important;
+        max-width: 28rem;
+        font-size: 1rem !important;
+        opacity: .95;
+    }
+
     /* Estilo especial para la carta de San Valentín */
     .carta {
         background-color: white;
@@ -219,6 +303,35 @@ def proximo_mesiversario(desde, hoy):
             dia -= 1
 
 
+def arrancar_musica():
+    """Pone la canción en marcha sin que haya que darle al play.
+
+    El navegador bloquea el sonido automático hasta que la persona toca algo,
+    y el <audio> de Streamlit no vuelve a intentarlo por su cuenta. Este
+    componente vive en un iframe con acceso al documento padre, así que
+    reintenta al cargar y además al primer toque en cualquier parte."""
+    components.html("""
+        <script>
+        (function () {
+          var doc;
+          try { doc = window.parent.document; } catch (e) { return; }
+
+          function arranca() {
+            var a = doc.querySelector('audio');
+            if (!a) return;
+            a.loop = true;              // Streamlit no fija el atributo loop
+            if (a.paused) { a.volume = 0.6; a.play().catch(function () {}); }
+          }
+
+          arranca();                    // por si la política del navegador lo permite
+          ['pointerdown', 'touchstart', 'keydown'].forEach(function (ev) {
+            doc.addEventListener(ev, arranca, true);
+          });
+        })();
+        </script>
+    """, height=0)
+
+
 def reproducir_en_bucle(*candidatos):
     """Reproduce el primer archivo que exista, en bucle y sin controles.
     Devuelve el nombre del archivo usado, o None si no encontró ninguno."""
@@ -258,7 +371,8 @@ if opcion == "Un Mes Más 💞":
     es_hoy = hoy.day == FECHA_INICIO.day
 
     # --- La canción del mes ---
-    sonando = reproducir_en_bucle(medio("gone_gone_gone.mp3"), medio("cancion.mp3"))
+    cancion = next((r for r in (medio("gone_gone_gone.mp3"),
+                                medio("cancion.mp3")) if os.path.exists(r)), None)
 
     # --- Lluvia de pétalos de fondo ---
     petalos = ""
@@ -273,9 +387,9 @@ if opcion == "Un Mes Más 💞":
     st.markdown(petalos, unsafe_allow_html=True)
 
     # --- Tarjeta principal ---
-    frase = ("Hoy es 19 otra vez, y otra vez me toca la mejor parte: seguir siendo tuyo."
+    frase = ("Hoy se cumple otro mes, y otra vez me toca la mejor parte: seguir siendo tuyo."
              if es_hoy else
-             "Cada 19 celebro lo mismo: que sigues aquí, y que yo sigo eligiéndote.")
+             "Cada mes celebro lo mismo: que sigues aquí, y que yo sigo eligiéndote.")
 
     st.markdown(f"""
     <div class="mes-hero">
@@ -304,14 +418,17 @@ if opcion == "Un Mes Más 💞":
 
     # --- La canción ---
     st.subheader("🎵 La canción de este mes")
-    if sonando and sonando.endswith("gone_gone_gone.mp3"):
-        st.caption("Sonando: **Gone, Gone, Gone** — Phillip Phillips")
-        st.audio(sonando)
-    elif sonando:
-        st.caption("Sonando la canción de siempre.")
-        st.audio(sonando)
-        st.info("💿 Para que suene **Gone, Gone, Gone**, guarda el archivo como "
-                "`gone_gone_gone.mp3` en esta misma carpeta. La página lo toma sola.")
+    if cancion:
+        es_gone = cancion.endswith("gone_gone_gone.mp3")
+        st.caption("**Gone, Gone, Gone** — Phillip Phillips" if es_gone
+                   else "La canción de siempre.")
+        # autoplay + loop nativos de Streamlit: sirve el archivo tal cual,
+        # sin incrustar megas de base64 en el HTML.
+        st.audio(cancion, format="audio/mp3", loop=True, autoplay=True)
+        arrancar_musica()
+        if not es_gone:
+            st.info("💿 Para que suene **Gone, Gone, Gone**, guarda el archivo como "
+                    "`gone_gone_gone.mp3` en esta misma carpeta. La página lo toma sola.")
     else:
         st.info("💿 Guarda `gone_gone_gone.mp3` en esta carpeta y sonará aquí.")
 
@@ -326,7 +443,7 @@ if opcion == "Un Mes Más 💞":
     st.markdown(f"""
     <div class="carta">
     <strong>MI PANDITA,</strong><br><br>
-    Otro 19. Otro mes que se nos pasó volando y que, sin embargo, alcanzó para
+    Otro mes que se nos pasó volando y que, sin embargo, alcanzó para
     muchísimo. {meses} meses ya, y todavía se me hace raro lo fácil que es
     quererte 🤍.<br><br>
     No sé en qué momento lo cotidiano contigo se volvió mi parte favorita del
@@ -335,26 +452,72 @@ if opcion == "Un Mes Más 💞":
     Gracias por {dias_juntos} días de aguantarme, de cuidarme y de hacerme reír
     cuando menos ganas tenía. Vamos por el mes {meses + 1}, y por todos los que
     vengan 🐼.<br><br>
-    <em>Tuyo, hoy y el 19 que viene.</em>
+    <em>Tuyo, hoy y el mes que viene.</em>
     </div>
     """, unsafe_allow_html=True)
 
     st.write("---")
 
     # --- Razón del mes ---
-    st.subheader("✨ Una razón, elegida al azar")
-    razones = [
-        "Porque me escuchas hasta cuando no digo nada coherente.",
-        "Porque tu risa me arregla el día completo.",
-        "Porque contigo hasta lo aburrido se vuelve plan.",
-        "Porque me haces sentir seguro, siempre.",
-        "Porque eres mi lugar favorito, y no es un lugar: eres tú.",
-        "Porque sigues eligiéndome, cada 19.",
-        "Porque me enseñaste que serendipia era una palabra con tu cara.",
+    st.subheader("🎁 Las cajitas del mes")
+    st.caption("Nueve cajitas, nueve cosas que quiero decirte. "
+               "Ábrelas cuando quieras, no hay prisa.")
+
+    REGALITOS = [
+        "Tu risa me arregla el día.",
+        "Contigo lo aburrido se vuelve plan.",
+        "Me haces sentir seguro, siempre.",
+        "Mi lugar favorito eres tú.",
+        "Me sigues eligiendo, mes tras mes.",
+        "Serendipia tiene tu cara.",
+        "Tu abrazo apaga los días malos.",
+        "Contigo no finjo nada.",
+        "Me escuchas aunque no diga nada coherente.",
     ]
-    if st.button("Dime por qué me amas hoy 💞"):
-        st.success(random.choice(razones))
+
+    # El reparto se baraja una vez por sesión: cada cajita guarda otra cosa.
+    if "cajitas_orden" not in st.session_state:
+        st.session_state.cajitas_orden = random.sample(range(len(REGALITOS)),
+                                                       len(REGALITOS))
+        st.session_state.cajitas_abiertas = []
+
+    abiertas = st.session_state.cajitas_abiertas
+
+    with st.container(key="cajitas"):
+        for fila in range(3):
+            columnas = st.columns(3)
+            for c in range(3):
+                i = fila * 3 + c
+                with columnas[c]:
+                    if i in abiertas:
+                        mensaje = REGALITOS[st.session_state.cajitas_orden[i]]
+                        st.markdown(f'<div class="cajita-abierta">{mensaje}</div>',
+                                    unsafe_allow_html=True)
+                    elif st.button("🎁", key=f"caja_{i}", width="stretch"):
+                        abiertas.append(i)
+                        st.rerun()
+
+    total = len(REGALITOS)
+    st.write(" ")
+    st.progress(len(abiertas) / total,
+                text=f"{len(abiertas)} de {total} cajitas abiertas")
+
+    if len(abiertas) == total:
+        st.markdown(f"""
+        <div class="cajita-final">
+            <p class="cajita-final__t">Las abriste todas 🤍</p>
+            <p class="cajita-final__p">Y aun así se me quedaron cosas por decir.
+            Para eso tenemos el mes {meses + 1}, y el siguiente, y el siguiente.</p>
+        </div>
+        """, unsafe_allow_html=True)
         lluvia_de_corazones()
+        st.balloons()
+
+    if abiertas:
+        if st.button("Cerrarlas y empezar de nuevo ↺", key="reiniciar_cajitas"):
+            st.session_state.cajitas_orden = random.sample(range(total), total)
+            st.session_state.cajitas_abiertas = []
+            st.rerun()
 
     st.write("---")
 
